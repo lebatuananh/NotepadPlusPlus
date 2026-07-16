@@ -7,6 +7,8 @@ CPMAddPackage(
     OPTIONS
         "BUILD_STATIC ON"
         "BUILD_EXAMPLES OFF"
+        "ADS_INSTALL OFF"
+    EXCLUDE_FROM_ALL YES
 )
 
 CPMAddPackage(
@@ -15,6 +17,7 @@ CPMAddPackage(
     GIT_TAG 8e7017f7fbdc2b4b1a26ed1eef9ebcba6a50639c
     OPTIONS
         "QSIMPLE_UPDATER_BUILD_TESTS OFF"
+    EXCLUDE_FROM_ALL YES
 )
 
 set(QAPPLICATION_CLASS QApplication CACHE STRING "Inheritance class for SingleApplication" FORCE)
@@ -22,12 +25,14 @@ CPMAddPackage(
     NAME SingleApplication
     GITHUB_REPOSITORY itay-grudev/SingleApplication
     GIT_TAG 494772e98cef0aa88124f154feb575cc60b08b38
+    EXCLUDE_FROM_ALL YES
 )
 
 CPMAddPackage(
     NAME editorconfig_core_qt
     GITHUB_REPOSITORY editorconfig/editorconfig-core-qt
     GIT_TAG ab62f0554abf2bbe4d45427b36a8b2f81ca7b4ab
+    EXCLUDE_FROM_ALL YES
 )
 
 add_subdirectory(lua)
