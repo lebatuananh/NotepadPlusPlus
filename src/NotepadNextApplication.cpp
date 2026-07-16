@@ -293,10 +293,7 @@ void NotepadNextApplication::setEditorLanguage(ScintillaNext *editor, const QStr
 
     auto lexerInstance = CreateLexer(lexer.toLatin1().constData());
     editor->setILexer((sptr_t) lexerInstance);
-    editor->clearDocumentStyle(); // Remove all previous style information, setting the lexer does not guarantee styling information is cleared
-
-    // Not ideal this has to be manually emitted but it works since setILexer() is not widely used
-    emit editor->lexerChanged();
+    editor->clearDocumentStyle();
 
     // Dynamic properties can be used to skip part of the default initialization. The value in the
     // property doesn't currently matter, but may be used at a later point.
@@ -307,6 +304,10 @@ void NotepadNextApplication::setEditorLanguage(ScintillaNext *editor, const QStr
     getLuaState()->setVariable("skip_tabwidth", skipTabWidth);
 
     getLuaState()->execute("SetLanguage(languageName)");
+
+    // Emitted after SetLanguage so listeners (notably EditorManager's theme
+    // application) see the final Lua-assigned foreground colors.
+    emit editor->lexerChanged();
 }
 
 QStringList NotepadNextApplication::getLanguageKeywords(const QString &languageName) const
