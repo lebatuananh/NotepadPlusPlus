@@ -7,6 +7,7 @@ qt_add_executable(NotepadNext
 	ColorPickerDelegate.h
 	ComboBoxDelegate.h
 	Converter.h
+	DarkPalette.h
 	DebugManager.h
 	DefaultDirectoryManager.h
 	DockedEditor.h
@@ -48,6 +49,7 @@ qt_add_executable(NotepadNext
 	SessionManager.h
 	SpinBoxDelegate.h
 	TranslationManager.h
+	ThemeResolver.h
 	UndoAction.h
 	ZoomEventWatcher.h
 	resources.qrc

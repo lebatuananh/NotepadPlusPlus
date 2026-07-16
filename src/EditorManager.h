@@ -40,6 +40,7 @@ public:
     ScintillaNext *getEditorByFilePath(const QString &filePath);
 
     void manageEditor(ScintillaNext *editor);
+    void applyTheme(bool dark);
 
 signals:
     void editorCreated(ScintillaNext *editor);
@@ -47,12 +48,14 @@ signals:
 
 private:
     void setupEditor(ScintillaNext *editor);
+    void applyThemeToEditor(ScintillaNext *editor, bool dark, bool initialSetup);
     void purgeOldEditorPointers();
     QList<QPointer<ScintillaNext>> getEditors();
     int detectEOLMode(ScintillaNext *editor) const;
 
     QList<QPointer<ScintillaNext>> editors;
     ApplicationSettings *settings;
+    bool darkTheme = false;
 };
 
 #endif // EDITORMANAGER_H

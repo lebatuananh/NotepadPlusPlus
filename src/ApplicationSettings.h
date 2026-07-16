@@ -19,6 +19,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <functional>
 
 #include <QObject>
@@ -76,6 +77,13 @@ public:
     };
     Q_ENUM(DefaultDirectoryBehaviorEnum)
 
+    enum ThemeEnum : std::uint8_t {
+        System,
+        Light,
+        Dark
+    };
+    Q_ENUM(ThemeEnum)
+
     template <typename T>
     T get(const char *key, const T &defaultValue) const
     { return value(QLatin1String(key), defaultValue).template value<T>(); }
@@ -120,4 +128,6 @@ public:
     DEFINE_SETTING(URLHighlighting, urlHighlighting, bool)
     DEFINE_SETTING(ShowLineNumbers, showLineNumbers, bool)
     DEFINE_SETTING(AutoCompletion, autoCompletion, bool)
+
+    DEFINE_SETTING(Theme, theme, ThemeEnum)
 };

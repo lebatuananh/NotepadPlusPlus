@@ -983,6 +983,7 @@ MainWindow::MainWindow(NotepadNextApplication *app) :
     setupLanguageMenu();
 
     applyStyleSheet();
+    connect(app, &NotepadNextApplication::effectiveThemeChanged, this, &MainWindow::applyStyleSheet);
 
     restoreSettings();
 
@@ -1844,8 +1845,12 @@ void MainWindow::applyStyleSheet()
 {
     qInfo(Q_FUNC_INFO);
 
+    const QString resource = app->isEffectiveThemeDark()
+        ? QStringLiteral(":/stylesheets/npp_dark.css")
+        : QStringLiteral(":/stylesheets/npp.css");
+
     QString sheet;
-    QFile f(":/stylesheets/npp.css");
+    QFile f(resource);
     qInfo() << "Loading stylesheet:" << f.fileName();
 
     f.open(QFile::ReadOnly);

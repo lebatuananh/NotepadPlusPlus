@@ -27,6 +27,7 @@
 #include "SessionManager.h"
 #include "TranslationManager.h"
 #include "ApplicationSettings.h"
+#include "ThemeResolver.h"
 
 #include "LuaState.h"
 #include "lua.hpp"
@@ -36,8 +37,9 @@
 #include "Lexilla.h"
 
 #include <QCommandLineParser>
-
 #include <QDirIterator>
+#include <QStyleFactory>
+#include <QStyleHints>
 
 #ifdef Q_OS_WIN
 #include <Windows.h>
@@ -141,6 +143,16 @@ bool NotepadNextApplication::init()
     });
 
     loadSettings();
+
+    applyTheme();
+    connect(settings, &ApplicationSettings::themeChanged, this, [this](ApplicationSettings::ThemeEnum) {
+        applyTheme();
+    });
+    connect(QGuiApplication::styleHints(), &QStyleHints::colorSchemeChanged, this, [this](Qt::ColorScheme) {
+        if (settings->theme() == ApplicationSettings::System) {
+            applyTheme();
+        }
+    });
 
     connect(this, &NotepadNextApplication::aboutToQuit, this, &NotepadNextApplication::saveSettings);
 
@@ -513,4 +525,67 @@ QStringList NotepadNextApplication::debugInfo() const
     info.append(QStringLiteral("Config File: %1").arg(ApplicationSettings().fileName()));
 
     return info;
+}
+
+bool NotepadNextApplication::isEffectiveThemeDark() const
+{
+    return resolveThemeIsDark(settings->theme(), QGuiApplication::styleHints()->colorScheme());
+}
+
+void NotepadNextApplication::applyTheme()
+{
+    const bool dark = isEffectiveThemeDark();
+
+    setStyle(QStyleFactory::create(QStringLiteral("Fusion")));
+
+    QPalette palette;
+    if (dark) {
+        palette.setColor(QPalette::Window,          QColor(45, 45, 45));
+        palette.setColor(QPalette::WindowText,      QColor(220, 220, 220));
+        palette.setColor(QPalette::Base,            QColor(30, 30, 30));
+        palette.setColor(QPalette::AlternateBase,   QColor(45, 45, 45));
+        palette.setColor(QPalette::ToolTipBase,     QColor(60, 60, 60));
+        palette.setColor(QPalette::ToolTipText,     QColor(220, 220, 220));
+        palette.setColor(QPalette::Text,            QColor(220, 220, 220));
+        palette.setColor(QPalette::PlaceholderText, QColor(140, 140, 140));
+        palette.setColor(QPalette::Button,          QColor(53, 53, 53));
+        palette.setColor(QPalette::ButtonText,      QColor(220, 220, 220));
+        palette.setColor(QPalette::BrightText,      Qt::red);
+        palette.setColor(QPalette::Link,            QColor(80, 160, 220));
+        palette.setColor(QPalette::Highlight,       QColor(38, 110, 180));
+        palette.setColor(QPalette::HighlightedText, Qt::white);
+        palette.setColor(QPalette::Mid,             QColor(140, 140, 140));
+        palette.setColor(QPalette::Midlight,        QColor(80, 80, 80));
+        palette.setColor(QPalette::Disabled, QPalette::Text,            QColor(120, 120, 120));
+        palette.setColor(QPalette::Disabled, QPalette::ButtonText,      QColor(120, 120, 120));
+        palette.setColor(QPalette::Disabled, QPalette::WindowText,      QColor(120, 120, 120));
+        palette.setColor(QPalette::Disabled, QPalette::HighlightedText, QColor(180, 180, 180));
+    } else {
+        palette.setColor(QPalette::Window,          QColor(240, 240, 240));
+        palette.setColor(QPalette::WindowText,      Qt::black);
+        palette.setColor(QPalette::Base,            Qt::white);
+        palette.setColor(QPalette::AlternateBase,   QColor(247, 247, 247));
+        palette.setColor(QPalette::ToolTipBase,     QColor(255, 255, 220));
+        palette.setColor(QPalette::ToolTipText,     Qt::black);
+        palette.setColor(QPalette::Text,            Qt::black);
+        palette.setColor(QPalette::PlaceholderText, QColor(120, 120, 120));
+        palette.setColor(QPalette::Button,          QColor(240, 240, 240));
+        palette.setColor(QPalette::ButtonText,      Qt::black);
+        palette.setColor(QPalette::BrightText,      Qt::red);
+        palette.setColor(QPalette::Link,            QColor(0, 102, 204));
+        palette.setColor(QPalette::Highlight,       QColor(48, 140, 198));
+        palette.setColor(QPalette::HighlightedText, Qt::white);
+        palette.setColor(QPalette::Mid,             QColor(140, 140, 140));
+        palette.setColor(QPalette::Midlight,        QColor(220, 220, 220));
+        palette.setColor(QPalette::Disabled, QPalette::Text,            QColor(160, 160, 160));
+        palette.setColor(QPalette::Disabled, QPalette::ButtonText,      QColor(160, 160, 160));
+        palette.setColor(QPalette::Disabled, QPalette::WindowText,      QColor(160, 160, 160));
+        palette.setColor(QPalette::Disabled, QPalette::HighlightedText, QColor(220, 220, 220));
+    }
+
+    setPalette(palette);
+
+    editorManager->applyTheme(dark);
+
+    emit effectiveThemeChanged();
 }
