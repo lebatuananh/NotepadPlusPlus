@@ -931,6 +931,48 @@ MainWindow::MainWindow(NotepadNextApplication *app) :
         QStringList arguments = {"/c", "start", "/d", filePath, command};
         QProcess::startDetached("cmd", arguments);
     });
+#elif defined(Q_OS_LINUX)
+    connect(ui->actionShowInExplorer, &QAction::triggered, this, [this]() {
+        QString filePath = currentEditor()->getFileInfo().canonicalFilePath();
+        QProcess::startDetached(QStringLiteral("xdg-open"), {QFileInfo(filePath).absolutePath()});
+    });
+
+    ui->actionOpenTerminalHere->setText(ui->actionOpenTerminalHere->text().arg(QStringLiteral("Terminal")));
+
+    connect(ui->actionOpenTerminalHere, &QAction::triggered, this, [this]() {
+        QString dir = currentEditor()->getFileInfo().dir().canonicalPath();
+        QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+        QString term = env.value(QStringLiteral("TERMINAL"));
+        if (term.isEmpty()) {
+            for (const auto &candidate : {
+                "x-terminal-emulator", "gnome-terminal", "konsole",
+                "xfce4-terminal", "mate-terminal", "xterm"}) {
+                if (!QStandardPaths::findExecutable(QString::fromLatin1(candidate)).isEmpty()) {
+                    term = QString::fromLatin1(candidate);
+                    break;
+                }
+            }
+        }
+        if (!term.isEmpty()) {
+            QProcess *proc = new QProcess();
+            proc->setWorkingDirectory(dir);
+            connect(proc, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+                    proc, &QProcess::deleteLater);
+            proc->start(term, {});
+        }
+    });
+#elif defined(Q_OS_MACOS)
+    connect(ui->actionShowInExplorer, &QAction::triggered, this, [this]() {
+        QString filePath = currentEditor()->getFileInfo().canonicalFilePath();
+        QProcess::startDetached(QStringLiteral("open"), {"-R", filePath});
+    });
+
+    ui->actionOpenTerminalHere->setText(ui->actionOpenTerminalHere->text().arg(QStringLiteral("Terminal")));
+
+    connect(ui->actionOpenTerminalHere, &QAction::triggered, this, [this]() {
+        QString dir = currentEditor()->getFileInfo().dir().canonicalPath();
+        QProcess::startDetached(QStringLiteral("open"), {"-a", "Terminal", dir});
+    });
 #endif
 
     EditorInspectorDock *editorInspectorDock = new EditorInspectorDock(this);
