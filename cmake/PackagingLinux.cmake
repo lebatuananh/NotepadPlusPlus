@@ -102,6 +102,7 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Cross-platform text editor")
 set(CPACK_PACKAGE_DESCRIPTION
     "NotepadNext is a cross-platform text editor built with Qt6, reimplementing Notepad++ features.")
 set(CPACK_PACKAGE_FILE_NAME "NotepadNext-${PROJECT_VERSION}-Linux-x86_64")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
 # ---------------------------------------------------------------------------
 # CPack DEB configuration
@@ -109,8 +110,8 @@ set(CPACK_PACKAGE_FILE_NAME "NotepadNext-${PROJECT_VERSION}-Linux-x86_64")
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 set(CPACK_DEBIAN_PACKAGE_MAINTAINER "NotepadNext Maintainers")
 set(CPACK_DEBIAN_PACKAGE_HOMEPAGE "https://github.com/dail8859/NotepadNext")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS
-    "libqt6core6 (>= 6.5), libqt6gui6 (>= 6.5), libqt6widgets6 (>= 6.5), libqt6network6 (>= 6.5), libqt6printsupport6 (>= 6.5), libxkbcommon0, libxcb-cursor0")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libxkbcommon0, libxcb-cursor0")
 set(CPACK_DEBIAN_PACKAGE_SECTION "editors")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 
@@ -123,7 +124,8 @@ set(CPACK_RPM_PACKAGE_VENDOR "NotepadNext")
 set(CPACK_RPM_PACKAGE_URL "https://github.com/dail8859/NotepadNext")
 set(CPACK_RPM_PACKAGE_DESCRIPTION
     "NotepadNext is a cross-platform text editor built with Qt6, reimplementing Notepad++ features.")
-set(CPACK_RPM_PACKAGE_REQUIRES "qt6-qtbase >= 6.5, libxkbcommon")
+set(CPACK_RPM_PACKAGE_AUTOREQ ON)
+set(CPACK_RPM_PACKAGE_REQUIRES "libxkbcommon")
 set(CPACK_RPM_PACKAGE_GROUP "Applications/Editors")
 
 include(CPack)

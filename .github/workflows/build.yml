@@ -75,7 +75,7 @@ jobs:
       - name: Setup Linux
         run: |
           echo "DISTRIBUTION=AppImage" >> "$GITHUB_ENV"
-          sudo apt-get install libxkbcommon-dev libxkbcommon-x11-0 fuse libxcb-cursor-dev libcups2-dev rpm
+          sudo apt-get install libxkbcommon-dev libxkbcommon-x11-0 fuse libxcb-cursor-dev libcups2-dev dpkg-dev rpm
 
       - name: Configure
         run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAPP_DISTRIBUTION=${{ env.DISTRIBUTION }}
