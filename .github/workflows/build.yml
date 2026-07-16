@@ -1,0 +1,159 @@
+name: Build & Release NotepadNext
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: Determine Version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Bump patch version
+        id: bump
+        run: |
+          LATEST=$(git tag -l 'v0.0.*' --sort=-v:refname | head -1)
+          if [ -z "$LATEST" ]; then
+            NEW_PATCH=1
+          else
+            PATCH="${LATEST##*.}"
+            NEW_PATCH=$((PATCH + 1))
+          fi
+          VERSION="0.0.${NEW_PATCH}"
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Next version: ${TAG}"
+
+  build:
+    needs: [version]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        qt_version: ["6.5", "6.8", "6.10"]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+
+      - name: Compute Qt suffix
+        id: qt
+        shell: bash
+        run: echo "suffix=qt$(echo '${{ matrix.qt_version }}' | tr -d '.')" >> "$GITHUB_OUTPUT"
+
+      - name: Set VERSION in CMakeLists.txt
+        shell: bash
+        run: |
+          VER="${{ needs.version.outputs.version }}"
+          sed -i 's/^\([[:space:]]*VERSION[[:space:]]*\).*/\1'"$VER"'/' CMakeLists.txt
+          grep -n '^[[:space:]]*VERSION' CMakeLists.txt
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ matrix.qt_version }}
+          modules: qt5compat
+          cache: true
+
+      - name: Setup Linux
+        run: |
+          echo "DISTRIBUTION=AppImage" >> "$GITHUB_ENV"
+          sudo apt-get install libxkbcommon-dev libxkbcommon-x11-0 fuse libxcb-cursor-dev libcups2-dev rpm
+
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DAPP_DISTRIBUTION=${{ env.DISTRIBUTION }}
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      - name: Build Linux AppImage
+        run: cmake --build build --target appimage --parallel
+
+      - name: Build Linux DEB and RPM packages
+        run: cmake --build build --target deb rpm
+
+      - name: Upload Linux AppImage
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotepadNext-Linux-AppImage-${{ steps.qt.outputs.suffix }}
+          path: ${{ github.workspace }}/build/NotepadNext*.AppImage
+
+      - name: Upload Linux DEB package
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotepadNext-Linux-DEB-${{ steps.qt.outputs.suffix }}
+          path: ${{ github.workspace }}/build/NotepadNext*.deb
+
+      - name: Upload Linux RPM package
+        uses: actions/upload-artifact@v7
+        with:
+          name: NotepadNext-Linux-RPM-${{ steps.qt.outputs.suffix }}
+          path: ${{ github.workspace }}/build/NotepadNext*.rpm
+
+  release:
+    name: Publish GitHub Release
+    runs-on: ubuntu-latest
+    needs: [version, build]
+    permissions:
+      contents: write
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Create and push tag
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git tag ${{ needs.version.outputs.tag }}
+          git push origin ${{ needs.version.outputs.tag }}
+
+      - name: Create Release
+        run: |
+          gh release create ${{ needs.version.outputs.tag }} \
+            --title "${{ needs.version.outputs.tag }}" \
+            --generate-notes
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v7
+
+      - name: Upload release assets
+        run: |
+          TAG="${{ needs.version.outputs.tag }}"
+          for suffix in qt65 qt68 qt610; do
+            # Linux AppImage
+            mv "NotepadNext-Linux-AppImage-${suffix}"/NotepadNext*.AppImage \
+               "NotepadNext-${TAG}-${suffix}-x86_64.AppImage"
+            gh release upload "$TAG" "NotepadNext-${TAG}-${suffix}-x86_64.AppImage"
+
+            # Linux DEB
+            mv "NotepadNext-Linux-DEB-${suffix}"/NotepadNext*.deb \
+               "NotepadNext-${TAG}-${suffix}-amd64.deb"
+            gh release upload "$TAG" "NotepadNext-${TAG}-${suffix}-amd64.deb"
+
+            # Linux RPM
+            mv "NotepadNext-Linux-RPM-${suffix}"/NotepadNext*.rpm \
+               "NotepadNext-${TAG}-${suffix}-x86_64.rpm"
+            gh release upload "$TAG" "NotepadNext-${TAG}-${suffix}-x86_64.rpm"
+          done
