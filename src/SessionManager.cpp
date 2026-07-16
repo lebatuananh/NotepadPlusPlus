@@ -129,11 +129,6 @@ void SessionManager::saveSession(MainWindow *window)
 
     clear();
 
-    // Early out if no flags are set
-    if (fileTypes == SessionManager::None) {
-        return;
-    }
-
     const ScintillaNext *currentEditor = window->currentEditor();
     int currentEditorIndex = 0;
     ApplicationSettings settings;;
@@ -146,7 +141,14 @@ void SessionManager::saveSession(MainWindow *window)
     for (const auto &editor : window->editors()) {
         SessionFileType editorType = determineType(editor);
 
-        if (fileTypes.testFlag(editorType)) {
+        // SavedFile entries are always written (cheap, INI-only, no content copy).
+        // UnsavedFile/TempFile are gated behind their respective flags because
+        // they copy editor content to disk on every autosave cycle.
+        const bool shouldStore =
+            editorType == SessionManager::SavedFile
+            || fileTypes.testFlag(editorType);
+
+        if (shouldStore) {
             settings.setArrayIndex(index);
 
             if (editorType == SessionManager::SavedFile) {
